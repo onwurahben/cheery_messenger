@@ -19,8 +19,8 @@ enum Status {
 }
 
 class AuthProvider extends ChangeNotifier {
-  final GoogleSignIn googleSignIn;
-  final FirebaseAuth firebaseAuth;
+  final GoogleSignIn googleSignIn; //google sign in provider
+  final FirebaseAuth firebaseAuth; //email and password
   final FirebaseFirestore firebaseFirestore;
   final SharedPreferences prefs;
 
@@ -38,10 +38,23 @@ class AuthProvider extends ChangeNotifier {
     return prefs.getString(FirestoreConstants.id);
   }
 
+  // Future<bool> isLoggedIn() async {
+  //   bool isLoggedIn = await googleSignIn.isSignedIn();
+  //   if (isLoggedIn &&
+  //       prefs.getString(FirestoreConstants.id)?.isNotEmpty == true) {
+  //     return true;
+  //   } else {
+  //     return false;
+  //   }
+  // }
+
   //check if user is logged in and if data is stored in sharedPreferences
+
   Future<bool> isLoggedIn() async {
-    bool isLoggedIn = await googleSignIn.isSignedIn();
-    if (isLoggedIn &&
+    final googleSignedIn = await googleSignIn.isSignedIn();
+    final firebaseSignedIn = firebaseAuth.currentUser != null;
+
+    if ((googleSignedIn || firebaseSignedIn) &&
         prefs.getString(FirestoreConstants.id)?.isNotEmpty == true) {
       return true;
     } else {
@@ -96,7 +109,7 @@ class AuthProvider extends ChangeNotifier {
               FirestoreConstants.phoneNumber, currentUser.phoneNumber ?? "");
         }
 
-        // if user data is not empty, set userChat model to the data
+        // if user data is available in the db, set userChat model to the data and save in pref
         else {
           DocumentSnapshot documentSnapshot = document[0];
           ChatUser userChat = ChatUser.fromDocument(documentSnapshot);
@@ -124,13 +137,11 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> handleSignIn(String? email, String? password,
       {bool isGoogleSignIn = false}) async {
-
     UserCredential? userCredential;
 
     try {
       _status = Status.authenticating;
       notifyListeners();
-
 
       if (isGoogleSignIn) {
         final googleUser = await googleSignIn.signIn();
@@ -147,8 +158,7 @@ class AuthProvider extends ChangeNotifier {
         );
 
         userCredential = await firebaseAuth.signInWithCredential(credential);
-
-      } else if ( email != null && password != null){
+      } else if (email != null && password != null) {
         userCredential = await firebaseAuth.signInWithEmailAndPassword(
           email: email,
           password: password,

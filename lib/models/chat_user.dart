@@ -17,6 +17,7 @@ class ChatUser extends Equatable {
       required this.phoneNumber,
       required this.aboutMe});
 
+  // you can modify the parameters
   ChatUser copyWith({
     String? id,
     String? photoUrl,
@@ -37,6 +38,7 @@ class ChatUser extends Equatable {
         FirestoreConstants.phoneNumber: phoneNumber,
         FirestoreConstants.aboutMe: aboutMe,
       };
+
   factory ChatUser.fromDocument(DocumentSnapshot snapshot) {
     String photoUrl = "";
     String nickname = "";
@@ -53,6 +55,7 @@ class ChatUser extends Equatable {
         print(e);
       }
     }
+
     return ChatUser(
         id: snapshot.id,
         photoUrl: photoUrl,

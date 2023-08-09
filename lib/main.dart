@@ -33,6 +33,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    //Exposes several providers to the app. Provider widgets hold and expose state.
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<AuthProvider>(
@@ -56,7 +59,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'Smart Talk',
+        title: 'Cherry messenger',
         theme: appTheme,
         home: const SplashPage(),
       ),

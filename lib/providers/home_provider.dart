@@ -16,6 +16,9 @@ class HomeProvider {
 
   Stream<QuerySnapshot> getFirestoreData(
       String collectionPath, int limit, String? textSearch) {
+
+    // get user based on searched display name
+
     if (textSearch?.isNotEmpty == true) {
       return firebaseFirestore
           .collection(collectionPath)
@@ -23,6 +26,9 @@ class HomeProvider {
           .where(FirestoreConstants.displayName, isEqualTo: textSearch)
           .snapshots();
     } else {
+
+      //return users
+
       return firebaseFirestore
           .collection(collectionPath)
           .limit(limit)

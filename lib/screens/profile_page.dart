@@ -1,5 +1,9 @@
 import 'dart:io';
+
+import 'package:cheery_messenger/allWidgets/name_editor.dart';
+import 'package:cheery_messenger/field_editing_ui.dart';
 import 'package:country_code_picker/country_code_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,9 +24,13 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
+
   TextEditingController? displayNameController;
   TextEditingController? aboutMeController;
+  TextEditingController? locationController;
   final TextEditingController _phoneController = TextEditingController();
+
+  final firebaseAuth = FirebaseAuth.instance;
 
   late String currentUserId;
   String dialCodeDigits = '+00';
@@ -31,6 +39,7 @@ class _ProfilePageState extends State<ProfilePage> {
   String photoUrl = '';
   String phoneNumber = '';
   String aboutMe = '';
+  String location = '';
 
   bool isLoading = false;
   File? avatarImageFile;
@@ -43,6 +52,35 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     profileProvider = context.read<ProfileProvider>();
     readLocal();
+    // readFirebase();
+  }
+
+  void readFirebase(){
+
+
+    setState(() {
+
+
+      // auth values are not firestore values.
+
+      id =  firebaseAuth.currentUser!.uid?? "";
+      displayName = firebaseAuth.currentUser!.displayName! ?? "";
+
+      print("$displayName");
+
+      photoUrl =  firebaseAuth.currentUser!.photoURL?? "";
+      phoneNumber = profileProvider.getPrefs(FirestoreConstants.phoneNumber) ?? "";
+      aboutMe = profileProvider.getPrefs(FirestoreConstants.aboutMe) ?? "";
+
+      print("$aboutMe");
+
+      location = profileProvider.getPrefs('location') ?? "";
+
+    });
+
+    displayNameController = TextEditingController(text: displayName);
+    aboutMeController = TextEditingController(text: aboutMe);
+    locationController = TextEditingController(text: location);
   }
 
   void readLocal() {
@@ -54,9 +92,15 @@ class _ProfilePageState extends State<ProfilePage> {
       phoneNumber =
           profileProvider.getPrefs(FirestoreConstants.phoneNumber) ?? "";
       aboutMe = profileProvider.getPrefs(FirestoreConstants.aboutMe) ?? "";
+
+      location = profileProvider.getPrefs('location') ?? "";
+
     });
     displayNameController = TextEditingController(text: displayName);
     aboutMeController = TextEditingController(text: aboutMe);
+    locationController = TextEditingController(text: location);
+
+
   }
 
   Future getImage() async {
@@ -95,12 +139,14 @@ class _ProfilePageState extends State<ProfilePage> {
           aboutMe: aboutMe);
       profileProvider.updateFirestoreData(
           FirestoreConstants.pathUserCollection, id, updateInfo.toJson())
+
           .then((value) async {
         await profileProvider.setPrefs(FirestoreConstants.photoUrl, photoUrl);
         setState(() {
           isLoading = false;
         });
       });
+
     } on FirebaseException catch (e) {
       setState(() {
         isLoading = false;
@@ -110,6 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void updateFirestoreData() {
+
     focusNodeNickname.unfocus();
     setState(() {
       isLoading = true;
@@ -122,6 +169,9 @@ class _ProfilePageState extends State<ProfilePage> {
         displayName: displayName,
         phoneNumber: phoneNumber,
         aboutMe: aboutMe);
+
+    // update firebase and prefs
+
     profileProvider.updateFirestoreData(
         FirestoreConstants.pathUserCollection, id, updateInfo.toJson())
         .then((value) async {
@@ -133,6 +183,8 @@ class _ProfilePageState extends State<ProfilePage> {
         FirestoreConstants.photoUrl, photoUrl,);
       await profileProvider.setPrefs(
           FirestoreConstants.aboutMe,aboutMe );
+      await profileProvider.setPrefs(
+          "location", location);
 
       setState(() {
         isLoading = false;
@@ -143,108 +195,167 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
+
   @override
   Widget build(BuildContext context) {
+
+
     return
-        Scaffold(
-          appBar: AppBar(
-            title: const Text(
-              AppConstants.profileTitle,
-            ),
+      Scaffold(
+        backgroundColor: const Color(0xFF494D52),
+        appBar: AppBar(
+          toolbarHeight: 80,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text(
+            AppConstants.profileTitle,
           ),
-          body: Stack(
-            children: [
-              SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      GestureDetector(
-                        onTap: getImage,
-                        child: Container(
-                          alignment: Alignment.center,
-                          child: avatarImageFile == null ? photoUrl.isNotEmpty ?
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(60),
-                            child: Image.network(photoUrl,
-                              fit: BoxFit.cover,
-                              width: 120,
-                              height: 120,
-                              errorBuilder: (context, object, stackTrace) {
-                                return const Icon(Icons.account_circle, size: 90,
-                                  color: AppColors.greyColor,);
-                              },
-                              loadingBuilder: (BuildContext context, Widget child,
-                                  ImageChunkEvent? loadingProgress) {
-                                if (loadingProgress == null) {
-                                  return child;
-                                }
-                                return SizedBox(
-                                  width: 90,
-                                  height: 90,
-                                  child: Center(
-                                    child: CircularProgressIndicator(
-                                      color: Colors.grey,
-                                      value: loadingProgress.expectedTotalBytes != null
-                                          ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes! : null,
-                                    ),
-                                  ),
-                                );
-                              },
+        ),
+
+
+        body: Stack(
+          children: [
+
+            //  firebaseAuth.currentUser != null?
+
+            SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+
+                children: [
+
+
+                  SizedBox(
+                    height: 250,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+
+                        Positioned(
+                          top: 80,
+                          // bottom: 50,
+                          child: Center(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                  color: Color(0xFF323538),
+                                  borderRadius: BorderRadius.all(Radius.circular(20))
+                              ),
+
+                              height: 130,
+                              width: 312,
+
                             ),
-                          ) : const Icon(Icons.account_circle,
-                            size: 90,
-                            color: AppColors.greyColor,)
-                              : ClipRRect(
-                            borderRadius: BorderRadius.circular(60),
-                            child: Image.file(avatarImageFile!, width: 120,
-                              height: 120,
-                              fit: BoxFit.cover,),),
-                          margin: const EdgeInsets.all(20),
-                        ),),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text('Name', style: TextStyle(
+                          ),
+                        ),
+
+                        Positioned(
+                          top: 4,
+                          child: GestureDetector(
+                            onTap: getImage,
+                            child: Container(
+                              alignment: Alignment.center,
+                              margin: const EdgeInsets.all(20),
+                              child:
+
+                              avatarImageFile == null ?
+
+                              photoUrl.isNotEmpty ?
+
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(60),
+                                child: Image.network(photoUrl,
+                                  fit: BoxFit.cover,
+                                  width: 100,
+                                  height: 100,
+                                  errorBuilder: (context, object, stackTrace) {
+                                    return const Icon(Icons.account_circle, size: 90,
+                                      color: AppColors.greyColor,);
+                                  },
+                                  loadingBuilder: (BuildContext context, Widget child,
+                                      ImageChunkEvent? loadingProgress) {
+                                    if (loadingProgress == null) {
+                                      return child;
+                                    }
+                                    return SizedBox(
+                                      width: 90,
+                                      height: 90,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: Colors.grey,
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                              loadingProgress.expectedTotalBytes! : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ) : const Icon(Icons.account_circle,
+                                size: 90,
+                                color: AppColors.greyColor,)
+
+                                  : ClipRRect(
+                                borderRadius: BorderRadius.circular(60),
+                                child: Image.file(avatarImageFile!, width: 100,
+                                  height: 100,
+                                  fit: BoxFit.cover,),),
+                            ),),
+                        ),
+                      ], ),
+                  ),
+
+
+                  Container(
+                    padding: const EdgeInsets.only(left: 20, right: 20),
+                    child: Column(
+                      children: [
+
+                        vertical15,
+
+                        fieldEditing(
+                            "name",
+                            displayNameController,
+                            displayName,
+                            (value) {displayName = value;},
+                            'Enter your name'),
+
+
+                        vertical15,
+
+                        fieldEditing(
+                          "Bio",
+                            aboutMeController,
+                            aboutMe,
+                            (value) {aboutMe = value;},
+                            'Tell us about yourself'),
+
+                        vertical15,
+
+                        fieldEditing(
+                            "Location",
+                            locationController,
+                            location,
+                                (value) {location = value;},
+                            'Enter your location'),
+
+                        vertical15,
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Select Country Code', style: TextStyle(
                             fontStyle: FontStyle.italic,
                             fontWeight: FontWeight.bold,
                             color: AppColors.spaceCadet,
                           ),),
-                          TextField(
-                            decoration: kTextInputDecoration.copyWith(
-                                hintText: 'Write your Name'),
-                            controller: displayNameController,
-                            onChanged: (value) {
-                              displayName = value;
-                            },
-                            focusNode: focusNodeNickname,
-                          ),
-                          vertical15,
-                          const Text('About Me...', style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.spaceCadet
-                          ),),
-                          TextField(
-                            decoration: kTextInputDecoration.copyWith(
-                                hintText: 'Write about yourself...'),
-                            onChanged: (value) {
-                              aboutMe = value;
-                            },
-                          ),
-                          vertical15,
-                          const Text('Select Country Code', style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.spaceCadet,
-                          ),),
-                          Container(
-                            width: double.infinity,
+                        ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Container(
+                            width: 100,
                             alignment: Alignment.centerLeft,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.black, width: 1.5),
+                              border: Border.all(color: Colors.black, width: 1),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: CountryCodePicker(
@@ -259,13 +370,20 @@ class _ProfilePageState extends State<ProfilePage> {
                               favorite: const ["+1", "US", "+91", "IN"],
                             ),
                           ),
-                          vertical15,
-                          const Text('Phone Number', style: TextStyle(
+                        ),
+
+                        vertical15,
+                        const Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text('Phone Number', style: TextStyle(
                             fontStyle: FontStyle.italic,
                             fontWeight: FontWeight.bold,
                             color: AppColors.spaceCadet,
                           ),),
-                          TextField(
+                        ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextField(
                             decoration: kTextInputDecoration.copyWith(
                               hintText: 'Phone Number',
                               prefix: Padding(
@@ -278,21 +396,26 @@ class _ProfilePageState extends State<ProfilePage> {
                             maxLength: 12,
                             keyboardType: TextInputType.number,
                           ),
-                        ],
-                      ),
-                      ElevatedButton(onPressed: updateFirestoreData, child:const Padding(
-                        padding:  EdgeInsets.all(8.0),
-                        child:  Text('Update Info'),
-                      )),
-
-                    ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              Positioned(child: isLoading ? const LoadingView() : const SizedBox.shrink()),
-            ],
-          ),
+                  ElevatedButton(onPressed: updateFirestoreData, child:const Padding(
+                    padding:  EdgeInsets.all(8.0),
+                    child:  Text('Update Info'),
+                  )),
 
-        );
+                ],
+              ),
+            ),
+            // : const LoadingView(),
+
+
+            Positioned(child: isLoading ? const LoadingView() : const SizedBox.shrink()),
+          ],
+        ),
+
+      );
 
   }
 }

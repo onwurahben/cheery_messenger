@@ -12,4 +12,8 @@ class AppColors {
   static const Color burgundy = Color(0xFF880d1e);
   static const Color indyBlue = Color(0xFF414361);
   static const Color spaceCadet = Color(0xFF2a2d43);
+
+  static const Color darkMain = Color(0xFF262C28);
+
+  static const Color purple = Color(0xFF7958D1);
 }

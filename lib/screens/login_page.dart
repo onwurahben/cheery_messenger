@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:cheery_messenger/allConstants/all_constants.dart';
 import 'package:cheery_messenger/providers/auth_provider.dart';
 import 'package:cheery_messenger/screens/home_page.dart';
+
+import '../utilities/my_styles.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -32,6 +35,7 @@ class _LoginPageState extends State<LoginPage> {
     }
 
     return Scaffold(
+      backgroundColor: Colors.deepPurple,
       body: Stack(
         children: [
           ListView(
@@ -43,12 +47,9 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               vertical50,
               const Text(
-                'Welcome to Smart Talk',
+                'Cherry Messenger',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: Sizes.dimen_26,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: kMessageTextStyle,
               ),
               vertical30,
               const Text(
@@ -62,8 +63,8 @@ class _LoginPageState extends State<LoginPage> {
               vertical50,
               Center(child: Image.asset('assets/images/back.png')),
               vertical50,
-              GestureDetector(
-                onTap: () async {
+              ElevatedButton(
+                onPressed: () async {
                   bool isSuccess = await authProvider.handleGoogleSignIn();
                   if (isSuccess) {
                     Navigator.pushReplacement(
@@ -72,15 +73,24 @@ class _LoginPageState extends State<LoginPage> {
                             builder: (context) => const HomePage()));
                   }
                 },
-                child: Image.asset('assets/images/google_login.jpg'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepOrange,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(100), // Button border radius
+                  ),
+                  padding: const EdgeInsets.only(top: 15, bottom: 15)
+                ),
+                child: const Text("Log In", style: kButtonTextStyle),
               ),
             ],
           ),
-          Center(
+          Container(
+            alignment: Alignment.bottomCenter,
             child: authProvider.status == Status.authenticating
-                ? const CircularProgressIndicator(
-                    color: AppColors.lightGrey,
-                  )
+                ? const SpinKitFadingCircle(
+                color: Colors.deepOrange,
+                size: 100.0,
+              )
                 : const SizedBox.shrink(),
           ),
         ],
